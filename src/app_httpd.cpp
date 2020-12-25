@@ -4,12 +4,31 @@
 #include "img_converters.h"
 #include "camera_index.h"
 #include "Arduino.h"
-
+#define HTTPD_USER_CONFIG() {                        \
+        .task_priority      = tskIDLE_PRIORITY+5,       \
+        .stack_size         = 4096,                     \
+        .server_port        = 80,                       \
+        .ctrl_port          = 32768,                    \
+        .max_open_sockets   = 7,                        \
+        .max_uri_handlers   = 16,                        \
+        .max_resp_headers   = 16,                        \
+        .backlog_conn       = 5,                        \
+        .lru_purge_enable   = false,                    \
+        .recv_wait_timeout  = 5,                        \
+        .send_wait_timeout  = 5,                        \
+        .global_user_ctx = NULL,                        \
+        .global_user_ctx_free_fn = NULL,                \
+        .global_transport_ctx = NULL,                   \
+        .global_transport_ctx_free_fn = NULL,           \
+        .open_fn = NULL,                                \
+        .close_fn = NULL,                               \
+}
 extern int gpLb;
 extern int gpLf;
 extern int gpRb;
 extern int gpRf;
 extern int gpLed;
+extern int gpPump;
 extern String WiFiAddr;
 
 void WheelAct(int nLf, int nLb, int nRf, int nRb);
@@ -103,7 +122,7 @@ static esp_err_t capture_handler(httpd_req_t *req){
     }
     esp_camera_fb_return(fb);
     int64_t fr_end = esp_timer_get_time();
-    Serial.printf("JPG: %uB %ums", (uint32_t)(fb_len), (uint32_t)((fr_end - fr_start)/1000));
+    // Serial.printf("JPG: %uB %ums", (uint32_t)(fb_len), (uint32_t)((fr_end - fr_start)/1000));
     return res;
 }
 
@@ -170,11 +189,11 @@ static esp_err_t stream_handler(httpd_req_t *req){
         last_frame = fr_end;
         frame_time /= 1000;
         uint32_t avg_frame_time = ra_filter_run(&ra_filter, frame_time);
-        Serial.printf("MJPG: %uB %ums (%.1ffps), AVG: %ums (%.1ffps)"
-            ,(uint32_t)(_jpg_buf_len),
-            (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time,
-            avg_frame_time, 1000.0 / avg_frame_time
-        );
+        // Serial.printf("MJPG: %uB %ums (%.1ffps), AVG: %ums (%.1ffps)"
+        //     ,(uint32_t)(_jpg_buf_len),
+        //     (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time,
+        //     avg_frame_time, 1000.0 / avg_frame_time
+        // );
     }
 
     last_frame = 0;
@@ -314,39 +333,44 @@ static esp_err_t index_handler(httpd_req_t *req){
  page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledon')><b>Light ON</b></button>";
  page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledoff')><b>Light OFF</b></button>";
  page += "</p>";
+page += "<p align=center>";
+ page += "<button style=background-color:yellow;width:100px;height:40px onmousedown=getsend('pumpon')><b>Pump ON</b></button>";
+ page += "<button style=background-color:blue;width:100px;height:40px onmousedown=getsend('servoleft')><b> < </b></button>";
+ page += "<button style=background-color:blue;width:100px;height:40px onmousedown=getsend('servoright')><b> > </b></button>";
+ page += "<button style=background-color:yellow;width:100px;height:40px onmousedown=getsend('pumpoff')><b>Pump OFF</b></button>";
+ page += "</p>";
+ page += "<p align=center>";
+ page += "<button style=background-color:green;width:100px;height:60px onmousedown=getsend('auto')><b> AUTO </b></button>";
+ page += "<button style=background-color:green;width:100px;height:60px onmousedown=getsend('manual')><b> MANUAL </b></button>";
+ page += "</p>";
  
     return httpd_resp_send(req, &page[0], strlen(&page[0]));
 }
 
 static esp_err_t go_handler(httpd_req_t *req){
-    WheelAct(HIGH, LOW, HIGH, LOW);
-    Serial.println("Go");
+    Serial.println("motor forward");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
 static esp_err_t back_handler(httpd_req_t *req){
-    WheelAct(LOW, HIGH, LOW, HIGH);
-    Serial.println("Back");
+    Serial.println("motor backward");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
 
 static esp_err_t left_handler(httpd_req_t *req){
-    WheelAct(HIGH, LOW, LOW, HIGH);
-    Serial.println("Left");
+    Serial.println("motor left");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
 static esp_err_t right_handler(httpd_req_t *req){
-    WheelAct(LOW, HIGH, HIGH, LOW);
-    Serial.println("Right");
+    Serial.println("motor right");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
 
 static esp_err_t stop_handler(httpd_req_t *req){
-    WheelAct(LOW, LOW, LOW, LOW);
-    Serial.println("Stop");
+    Serial.println("motor stop");
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
@@ -363,9 +387,40 @@ static esp_err_t ledoff_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }
+static esp_err_t pumpon_handler(httpd_req_t *req){
+    Serial.println("pump on");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t pumpoff_handler(httpd_req_t *req){
+    Serial.println("pump off");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t servoleft_handler(httpd_req_t *req){
+    digitalWrite(gpPump, HIGH);
+    Serial.println("servo -");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t servoright_handler(httpd_req_t *req){
+    Serial.println("servo +");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t auto_handler(httpd_req_t *req){
+    Serial.println("auto");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
+static esp_err_t manual_handler(httpd_req_t *req){
+    Serial.println("manual");
+    httpd_resp_set_type(req, "text/html");
+    return httpd_resp_send(req, "OK", 2);
+}
 
 void startCameraServer(){
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    httpd_config_t config = HTTPD_USER_CONFIG();
 
     httpd_uri_t go_uri = {
         .uri       = "/go",
@@ -415,11 +470,55 @@ void startCameraServer(){
         .handler   = ledoff_handler,
         .user_ctx  = NULL
     };
+    
+    httpd_uri_t pumpon_uri = {
+        .uri       = "/pumpon",
+        .method    = HTTP_GET,
+        .handler   = pumpon_handler,
+        .user_ctx  = NULL
+    };
+
+    httpd_uri_t pumpoff_uri = {
+        .uri       = "/pumpoff",
+        .method    = HTTP_GET,
+        .handler   = pumpoff_handler,
+        .user_ctx  = NULL
+    };
 
     httpd_uri_t index_uri = {
         .uri       = "/",
         .method    = HTTP_GET,
         .handler   = index_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t servoleft_uri = {
+        .uri       = "/servoleft",
+        .method    = HTTP_GET,
+        .handler   = servoleft_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t servoright_uri = {
+        .uri       = "/servoright",
+        .method    = HTTP_GET,
+        .handler   = servoright_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t stream_uri = {
+        .uri       = "/stream",
+        .method    = HTTP_GET,
+        .handler   = stream_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t auto_uri = {
+        .uri       = "/auto",
+        .method    = HTTP_GET,
+        .handler   = auto_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t manual_uri = {
+        .uri       = "/manual",
+        .method    = HTTP_GET,
+        .handler   = manual_handler,
         .user_ctx  = NULL
     };
 
@@ -443,17 +542,8 @@ void startCameraServer(){
         .handler   = capture_handler,
         .user_ctx  = NULL
     };
-
-   httpd_uri_t stream_uri = {
-        .uri       = "/stream",
-        .method    = HTTP_GET,
-        .handler   = stream_handler,
-        .user_ctx  = NULL
-    };
-
-
     ra_filter_init(&ra_filter, 20);
-    Serial.printf("Starting web server on port: '%d'", config.server_port);
+    // Serial.printf("Starting web server on port: '%d'", config.server_port);
     if (httpd_start(&camera_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &go_uri); 
@@ -463,20 +553,18 @@ void startCameraServer(){
         httpd_register_uri_handler(camera_httpd, &right_uri);
         httpd_register_uri_handler(camera_httpd, &ledon_uri);
         httpd_register_uri_handler(camera_httpd, &ledoff_uri);
+        httpd_register_uri_handler(camera_httpd, &pumpon_uri);
+        httpd_register_uri_handler(camera_httpd, &pumpoff_uri);
+        httpd_register_uri_handler(camera_httpd, &servoleft_uri);
+        httpd_register_uri_handler(camera_httpd, &servoright_uri);
+        httpd_register_uri_handler(camera_httpd, &auto_uri);
+        httpd_register_uri_handler(camera_httpd, &manual_uri);
     }
 
     config.server_port += 1;
     config.ctrl_port += 1;
-    Serial.printf("Starting stream server on port: '%d'", config.server_port);
+    // Serial.printf("Starting stream server on port: '%d'", config.server_port);
     if (httpd_start(&stream_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(stream_httpd, &stream_uri);
     }
-}
-
-void WheelAct(int nLf, int nLb, int nRf, int nRb)
-{
- digitalWrite(gpLf, nLf);
- digitalWrite(gpLb, nLb);
- digitalWrite(gpRf, nRf);
- digitalWrite(gpRb, nRb);
 }

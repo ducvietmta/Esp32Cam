@@ -1,10 +1,22 @@
-#include "Arduino.h"
+//Viral Science www.youtube.com/c/viralscience  www.viralsciencecreativity.com
+//ESP32 Camera Surveillance Car
+
 #include "esp_camera.h"
 #include <WiFi.h>
+
+//
+// WARNING!!! Make sure that you have either selected ESP32 Wrover Module,
+//            or another board which has PSRAM enabled
+//
+// Adafruit ESP32 Feather
+
+// Select camera model
+//#define CAMERA_MODEL_WROVER_KIT
+//#define CAMERA_MODEL_M5STACK_PSRAM
 #define CAMERA_MODEL_AI_THINKER
 
-const char* ssid = "iPhone";
-const char* password = "88888888";
+const char* ssid = "iPhone";   //Enter SSID WIFI Name
+const char* password = "88888888";   //Enter WIFI Password
 
 
 #if defined(CAMERA_MODEL_WROVER_KIT)
@@ -56,6 +68,7 @@ extern int gpLf = 14; // Left 2
 extern int gpRb = 15; // Right 1
 extern int gpRf = 13; // Right 2
 extern int gpLed =  4; // Light
+extern int gpPump = 16;
 extern String WiFiAddr ="";
 
 void startCameraServer();
@@ -64,13 +77,12 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
-
-
   pinMode(gpLb, OUTPUT); //Left Backward
   pinMode(gpLf, OUTPUT); //Left Forward
   pinMode(gpRb, OUTPUT); //Right Forward
   pinMode(gpRf, OUTPUT); //Right Backward
   pinMode(gpLed, OUTPUT); //Light
+  pinMode(gpPump, OUTPUT); //Light
 
   //initialize
   digitalWrite(gpLb, LOW);
@@ -78,7 +90,7 @@ void setup() {
   digitalWrite(gpRb, LOW);
   digitalWrite(gpRf, LOW);
   digitalWrite(gpLed, LOW);
-
+  digitalWrite(gpPump, LOW);
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -126,17 +138,15 @@ void setup() {
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    Serial.print("scan");
   }
   Serial.println("");
   Serial.println("WiFi connected");
 
   startCameraServer();
 
-  Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   WiFiAddr = WiFi.localIP().toString();
-  Serial.println("' to connect");
 }
 
 void loop() {
