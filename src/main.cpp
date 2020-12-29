@@ -15,8 +15,8 @@
 //#define CAMERA_MODEL_M5STACK_PSRAM
 #define CAMERA_MODEL_AI_THINKER
 
-const char* ssid = "iPhone";   //Enter SSID WIFI Name
-const char* password = "88888888";   //Enter WIFI Password
+const char* ssid = "bongbong";   //Enter SSID WIFI Name
+const char* password = "buiphong";   //Enter WIFI Password
 
 
 #if defined(CAMERA_MODEL_WROVER_KIT)
@@ -77,6 +77,8 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
+
+
   pinMode(gpLb, OUTPUT); //Left Backward
   pinMode(gpLf, OUTPUT); //Left Forward
   pinMode(gpRb, OUTPUT); //Right Forward

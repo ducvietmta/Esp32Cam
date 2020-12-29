@@ -1,9 +1,6 @@
 {
 	"folders": [
 		{
-			"path": "../../../../../Downloads/Esp32Cam-master"
-		},
-		{
 			"name": "UNO-Car-Cam",
 			"path": ".."
 		}

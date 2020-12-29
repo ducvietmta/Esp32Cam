@@ -313,31 +313,34 @@ static esp_err_t status_handler(httpd_req_t *req){
 
 static esp_err_t index_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
+    //////////// WEBSITE ////////////////
     String page = "";
-     page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">\n";
+    page += "<head><h2>***Bui Van Phong D11-KTDT***</h2>";
+// page += "<button style=background-color:white;width:200px;height:40px onmousedown=getsend('aaa')><b>Bui Van Phong D11-KTDT</b></button>";     
+page += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0\">\n";
  page += "<script>var xhttp = new XMLHttpRequest();</script>";
  page += "<script>function getsend(arg) { xhttp.open('GET', arg +'?' + new Date().getTime(), true); xhttp.send() } </script>";
  //page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:280px;'></p><br/><br/>";
- page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:300px; transform:rotate(180deg);'></p><br/><br/>";
+ page += "<p align=center><IMG SRC='http://" + WiFiAddr + ":81/stream' style='width:300px; transform:rotate(0deg);'></p><br/><br/>";
  
- page += "<p align=center> <button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('go') onmouseup=getsend('stop') ontouchstart=getsend('go') ontouchend=getsend('stop') ><b>Forward</b></button> </p>";
+ page += "<p align=center> <button style=background-color:lightgrey;width:90px;height:60px onmousedown=getsend('go') onmouseup=getsend('stop') ontouchstart=getsend('go') ontouchend=getsend('stop') ><b>Forward</b></button> </p>";
  page += "<p align=center>";
- page += "<button style=background-color:lightgrey;width:90px;height:80px; onmousedown=getsend('left') onmouseup=getsend('stop') ontouchstart=getsend('left') ontouchend=getsend('stop')><b>Left</b></button>&nbsp;";
- page += "<button style=background-color:indianred;width:90px;height:80px onmousedown=getsend('stop') onmouseup=getsend('stop')><b>Stop</b></button>&nbsp;";
- page += "<button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('right') onmouseup=getsend('stop') ontouchstart=getsend('right') ontouchend=getsend('stop')><b>Right</b></button>";
+ page += "<button style=background-color:lightgrey;width:90px;height:60px; onmousedown=getsend('left') onmouseup=getsend('stop') ontouchstart=getsend('left') ontouchend=getsend('stop')><b>Left</b></button>&nbsp;";
+ page += "<button style=background-color:indianred;width:90px;height:60px onmousedown=getsend('stop') onmouseup=getsend('stop')><b>Stop</b></button>&nbsp;";
+ page += "<button style=background-color:lightgrey;width:90px;height:60px onmousedown=getsend('right') onmouseup=getsend('stop') ontouchstart=getsend('right') ontouchend=getsend('stop')><b>Right</b></button>";
  page += "</p>";
 
- page += "<p align=center><button style=background-color:lightgrey;width:90px;height:80px onmousedown=getsend('back') onmouseup=getsend('stop') ontouchstart=getsend('back') ontouchend=getsend('stop') ><b>Backward</b></button></p>";  
+ page += "<p align=center><button style=background-color:lightgrey;width:90px;height:60px onmousedown=getsend('back') onmouseup=getsend('stop') ontouchstart=getsend('back') ontouchend=getsend('stop') ><b>Backward</b></button></p>";  
 
  page += "<p align=center>";
  page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledon')><b>Light ON</b></button>";
  page += "<button style=background-color:yellow;width:140px;height:40px onmousedown=getsend('ledoff')><b>Light OFF</b></button>";
  page += "</p>";
 page += "<p align=center>";
- page += "<button style=background-color:yellow;width:100px;height:40px onmousedown=getsend('pumpon')><b>Pump ON</b></button>";
- page += "<button style=background-color:blue;width:100px;height:40px onmousedown=getsend('servoleft')><b> < </b></button>";
- page += "<button style=background-color:blue;width:100px;height:40px onmousedown=getsend('servoright')><b> > </b></button>";
- page += "<button style=background-color:yellow;width:100px;height:40px onmousedown=getsend('pumpoff')><b>Pump OFF</b></button>";
+ page += "<button style=background-color:yellow;width:80px;height:40px onmousedown=getsend('pumpon')><b>Pump ON</b></button>";
+ page += "<button style=background-color:blue;width:50px;height:40px onmousedown=getsend('servoleft')><b> < </b></button>";
+ page += "<button style=background-color:blue;width:50px;height:40px onmousedown=getsend('servoright')><b> > </b></button>";
+ page += "<button style=background-color:yellow;width:80px;height:40px onmousedown=getsend('pumpoff')><b>Pump OFF</b></button>";
  page += "</p>";
  page += "<p align=center>";
  page += "<button style=background-color:green;width:100px;height:60px onmousedown=getsend('auto')><b> AUTO </b></button>";
@@ -388,7 +391,7 @@ static esp_err_t ledoff_handler(httpd_req_t *req){
     return httpd_resp_send(req, "OK", 2);
 }
 static esp_err_t pumpon_handler(httpd_req_t *req){
-    Serial.println("pump on");
+    Serial.println("pump on"); // truyền lệnh điều khiển sang arduino 
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, "OK", 2);
 }

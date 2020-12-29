@@ -3,14 +3,20 @@
 #include <LiquidCrystal_I2C.h>
 #include <Servo.h>
 #include <stdio.h>
-#define IN1  7
+#include "following_line.h"
+#define IN1 7
 #define IN2 6
 #define IN3 5
 #define IN4 4
-#define MAX_SPEED 255 //từ 0-255
+#define PUMP 13
+#define MAX_SPEED 170 //từ 0-255
+#define SPEED1 200
 #define MIN_SPEED 0
+
 LiquidCrystal_I2C lcd(0x27,16,2); 
 String data, mainCommand, subCommand;
+following_line * fl;
+
 #define SERVO A0
 Servo servo;
 void motor_1_Dung() {
@@ -63,9 +69,9 @@ void waiting_wifi(){
   delay(500);
 }
 void servo_control(String command){
-  static int angle = 90;
+  static int angle = 90; // ban đầu quay về góc 90
   if(command == "+"){
-    angle = angle + 10;
+    angle = angle + 10; // bước nhảy góc 10"
   }
   if(command == "-"){
     angle = angle - 10;
@@ -106,7 +112,14 @@ void setup()
   Serial.begin(115200);  
   servo.attach(SERVO);  
   servo.write(90);
+  pinMode(SENSOR1, INPUT); // Set pin 8 to input mode
+  pinMode(SENSOR2, INPUT); // Set pin 9 to input mode
+  pinMode(SENSOR3, INPUT); // Set pin 10 to input mode
+  pinMode(SENSOR4, INPUT); // Set pin 11 to input mode
+  pinMode(SENSOR5, INPUT); // Set pin 12 to input mode
+  pinMode(PUMP, OUTPUT); 
   delay(1000);
+  fl = new following_line();
 }
 
 void loop()
@@ -138,7 +151,25 @@ void loop()
   }
   if(mainCommand == "motor"){
     motor_control(subCommand);
-    delay(1000);
+  }
+  if(mainCommand == "auto"){
+    Serial.println("auto");
+    int vitrixe = fl->getPosition();
+    //int Udk = fl->PIDControl(vitrixe);
+    Serial.println(vitrixe);
+    motor_1_Tien(150- vitrixe);
+    motor_2_Tien(150+ vitrixe);
+  }
+  if(mainCommand == "manual"){
+    Serial.println("manual");
+    mainCommand == "";
+    motor_1_Dung();
+    motor_2_Dung();
+  }
+  if(mainCommand == "pump"){
+    if(subCommand == "off"){
+      digitalWrite(PUMP, LOW);
+    }else digitalWrite(PUMP, HIGH);
   }
   data = "";
 }
